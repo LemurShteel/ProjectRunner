@@ -3,22 +3,22 @@
 public class KinematicMovement2D : MonoBehaviour
 {
 
-    [SerializeField] private float _shellRadius = 0.02f;
-    [SerializeField] private bool _useRicochet;
-    [SerializeField] [Range(0, 1)] private float _bounciness;
-    [SerializeField] private bool _useSlope;
-    [SerializeField] [Range(0, 90)] private float _slopeLimit;
-    [SerializeField] public ContactFilter2D _collisionsFilter;
+    [SerializeField] protected float _shellRadius = 0.02f;
+    [SerializeField] [Range(0, 1.015f)] protected float _bounciness; 
+    //Интересная ситуация. Для сохранения инерации значение 1.015 подохдит лучше всего. Проблема в применении гравитации, которая перебивает скорость и сводит в минус велосити.
+    [SerializeField] protected bool _useSlope;
+    [SerializeField] [Range(0, 90)] protected float _slopeLimit;
+    [SerializeField] public ContactFilter2D _collisionsFilter; //Слопы можно использовать отсюда, но пока нет особой необходимости перерабатывать этот кусок кода. 
 
     public bool IsGrounded { get; private set; }
 
-    private Rigidbody2D _rb2d;
-    private readonly RaycastHit2D[] _raycast2d = new RaycastHit2D[8];
+    protected Rigidbody2D _rb2d;
+    protected readonly RaycastHit2D[] _raycast2d = new RaycastHit2D[8];
 
-    private float _testAngle;
+    protected float _testAngle;
 
-    private Vector2 _newPositionCheck;
-    private Vector2 _newtPosition;
+    protected Vector2 _newPositionCheck;
+    protected Vector2 _newtPosition;
 
     void Start()
     {
@@ -30,7 +30,6 @@ public class KinematicMovement2D : MonoBehaviour
     /// </summary>
     /// <param name="velocity"></param>
     /// <returns></returns>
-
     public Vector2 MoveBody(Vector2 velocity)
     {
 
@@ -44,18 +43,13 @@ public class KinematicMovement2D : MonoBehaviour
         return velocity;
     }
 
-    private void CalculateNewPosition(ref Vector2 velocity)
+    protected virtual void CalculateNewPosition(ref Vector2 velocity)
     {
-        if (_useRicochet)
-            _newtPosition = Ricochet(ref velocity);
-        else
-        {
-            _newtPosition = CollisionCheck(ref velocity.x, true);
-            _newtPosition += CollisionCheck(ref velocity.y, false);
-        }
+        _newtPosition = CollisionCheck(ref velocity.x, true);
+        _newtPosition += CollisionCheck(ref velocity.y, false);
     }
 
-    private Vector2 CollisionCheck(ref float velocityValue, bool isHorizontal)
+    protected virtual Vector2 CollisionCheck(ref float velocityValue, bool isHorizontal)
     {
         _newPositionCheck = velocityValue * (isHorizontal ? Vector2.right : Vector2.up);
 
@@ -121,42 +115,13 @@ public class KinematicMovement2D : MonoBehaviour
         return _newPositionCheck * Time.fixedDeltaTime;
     }
 
-    private Vector2 Ricochet(ref Vector2 testVelocity) //Это можно вынести и реализовать через наследование, не все объекты будут рикошетить.
-    {
-        //Кастуем в этом направлении проверяемое значение на следующий кадр.
-        if (_rb2d.Cast(testVelocity, _collisionsFilter, _raycast2d, testVelocity.magnitude * Time.fixedDeltaTime + _shellRadius) > 0) //Значит имеется столновение с кастом.
-        {
-            foreach (RaycastHit2D hit2D in _raycast2d)   
-            {
-                //если рейкаст дистанс меньше шелл радиуса, значит объект находится внутри шелл радиуса
-                if (hit2D.distance >= _shellRadius)
-                {
-                    _testAngle = Vector2.SignedAngle(-testVelocity.normalized, hit2D.normal);
-                    _newPositionCheck = (hit2D.distance - _shellRadius) * testVelocity.normalized;
-                    testVelocity = RotateToAngle(testVelocity, _testAngle * 2) * -_bounciness;
-                    return _newPositionCheck;
-                }
-                else
-                {
-                    _newPositionCheck = hit2D.normal * -(hit2D.distance - _shellRadius);
-                    return _newPositionCheck;
-                }
-            }
-        }
-        return testVelocity * Time.fixedDeltaTime;
-    }
-
-
     //Хелперы.
 
-    private Vector2 RotateToAngle(Vector2 vector, float angle)
+    protected virtual Vector2 RotateToAngle(Vector2 vector, float angle)
     {
         return new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle) * vector.x - Mathf.Sin(Mathf.Deg2Rad * angle) * vector.y, 
             Mathf.Sin(Mathf.Deg2Rad * angle) * vector.x + Mathf.Cos(Mathf.Deg2Rad * angle) * vector.y);
     }
-
-
-
 }
 
 

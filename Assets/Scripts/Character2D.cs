@@ -17,6 +17,11 @@ public class Character2D : MonoBehaviour
     {
         _km2d = GetComponent<KinematicMovement2D>();
     }
+
+    public void DamagePlayer()
+    {
+        Debug.Log("Oh no! Player Damaged!");
+    }
     void Update()
     {
         if (_useControls)
